@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -25,14 +26,20 @@ const Feelings = ({ navigation }) => {
   const [selectedRadioButtonId, setSelectedRadioButtonId] = useState(null);
   const [subAnswers, setSubAnswers] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [updateQuestion, setUpdateQuestion] = useState({ text: '', questionId: '', subquestionId: '' })
+  const [loading, setLoading] = useState(false);
+
 
   const loadKnowledge = async () => {
     try {
+      setLoading(true);
+
       const feelingList = await DataService.getCollection(`feelings-questions`);
       setKnowledge(feelingList);
-
+      setLoading(false);
       // await AsyncStorage.setItem("knowledge", JSON.stringify(dummyData));
     } catch (error) {
+      setLoading(false);
       console.error("Failed to load knowledge from AsyncStorage:", error);
     }
   };
@@ -60,12 +67,13 @@ const Feelings = ({ navigation }) => {
   useEffect(() => {
     checkAuth();
     loadKnowledge();
-    return () => {};
+    return () => { };
   }, []);
 
   const toggleExpand = (index) => {
     setExpandedIndex(index === expandedIndex ? null : index);
-    selectedCardId(null);
+    setSelectedCardId(null);
+    setUpdateQuestion({ text: '', subquestionId: '', questionId: '' })
   };
 
   const feelingsData = Array.from({ length: 9 }, (_, index) => ({
@@ -138,8 +146,21 @@ const Feelings = ({ navigation }) => {
     }
   };
 
+  const handleUpdateSubQuestions = async () => {
+    if (updateQuestion.subquestionId && updateQuestion.questionId && updateQuestion.text()) {
+      Alert.alert("Error", "Please click on below item")
+      return
+    }
+    await DataService.updateFeelingsAndNeedsSubquestions(updateQuestion, 'feelings-questions')
+    setUpdateQuestion({ text: '', subquestionId: '', questionId: '' })
+
+    loadKnowledge()
+  };
+
   const renderFeelingsCard = ({ item }) => {
     return (
+
+
       <View
         style={[styles.card, selectedCardId === item.id && styles.selectedCard]}
       >
@@ -151,10 +172,14 @@ const Feelings = ({ navigation }) => {
             <Ionicons name="arrow-forward" size={24} color="#274472" />
           </TouchableOpacity>
         )}
-        <Text style={styles.cardText}>{item.subquestionText}</Text>
+        <TouchableOpacity onPress={() => { isAdmin && setUpdateQuestion({ subquestionId: item.id, questionId: item.questionId, text: item.subquestionText }) }}>
+          <Text style={styles.cardText}>{item.subquestionText}</Text>
+        </TouchableOpacity>
       </View>
+
     );
   };
+
 
   const updateAnswers = async (item) => {
     setSelectedRadioButtonId(item.id);
@@ -166,7 +191,6 @@ const Feelings = ({ navigation }) => {
       userId: auth.currentUser.uid,
     };
 
-    console.log(userAnswer, "here is user answer");
     try {
       await DataService.checkExistingRecordAndUpdate(
         "user-feelings-answers",
@@ -204,69 +228,77 @@ const Feelings = ({ navigation }) => {
     );
   };
 
-  const addFeeling = async (feelingData) => {
-    try {
-      const feelingsRef = collection(
-        db,
-        `users/${auth.currentUser.uid}/feelings`
-      );
-      await addDoc(feelingsRef, {
-        ...feelingData,
-        createdAt: serverTimestamp(),
-      });
-    } catch (error) {
-      console.error("Error adding feeling:", error);
-      Alert.alert("Error", "Failed to save feeling");
-    }
-  };
-
   return (
     <LinearGradient colors={["#5885AF", "#5885AF"]} style={styles.background}>
       <Header onBack={() => navigation.goBack()} title="Feelings" />
       <View style={styles.container}>
-        <FlatList
-          data={knowledge}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item, index }) => {
-            const squesutions = item.subquestions;
-            return (
-              <>
-                <TouchableOpacity onPress={() => toggleExpand(index)}>
-                  <View style={styles.listItem}>
-                    <View style={styles.itemContent}>
-                      <View style={styles.itemNumber}>
-                        <Text style={styles.itemNumberText}>{index + 1}</Text>
+
+        {loading ? <ActivityIndicator size="large" color="white" />
+          :
+
+          <FlatList
+            data={knowledge}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item, index }) => {
+              const squesutions = item.subquestions;
+              return (
+                <>
+                  <TouchableOpacity onPress={() => toggleExpand(index)}>
+                    <View style={styles.listItem}>
+                      <View style={styles.itemContent}>
+                        <View style={styles.itemNumber}>
+                          <Text style={styles.itemNumberText}>{index + 1}</Text>
+                        </View>
+                        <Text style={styles.itemText}>{item.questionText}</Text>
+                        <Ionicons
+                          name={
+                            expandedIndex === index
+                              ? "chevron-up"
+                              : "chevron-down"
+                          }
+                          size={24}
+                          color="#FFF"
+                        />
                       </View>
-                      <Text style={styles.itemText}>{item.questionText}</Text>
-                      <Ionicons
-                        name={
-                          expandedIndex === index
-                            ? "chevron-up"
-                            : "chevron-down"
-                        }
-                        size={24}
-                        color="#FFF"
-                      />
                     </View>
-                  </View>
-                </TouchableOpacity>
-                {expandedIndex === index && (
-                  <FlatList
-                    data={selectedCardId ? subAnswers : squesutions}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={
-                      selectedCardId
-                        ? renderRadioButtonCard
-                        : renderFeelingsCard
-                    }
-                    numColumns={3}
-                    contentContainerStyle={styles.grid}
-                  />
-                )}
-              </>
-            );
-          }}
-        />
+                  </TouchableOpacity>
+                  {expandedIndex === index && (
+                    <>
+                      <View style={styles.subThoughtInputContainer}>
+                        <TextInput
+                          style={styles.expandedInput}
+                          placeholder="update question here..."
+                          placeholderTextColor="#FFFFFF80"
+                          value={updateQuestion.text}
+                          onChangeText={(e) => setUpdateQuestion({ ...updateQuestion, text: e })}
+                          autoCapitalize="none"
+                          selectionColor="#FFFFFF"
+                        />
+                        <TouchableOpacity
+                          onPress={handleUpdateSubQuestions}
+                          style={styles.subThoughtSendButton}
+                        >
+                          <Ionicons name="paper-plane-outline" size={24} color="#274472" />
+                        </TouchableOpacity>
+                      </View>
+                      <FlatList
+                        data={selectedCardId ? subAnswers : squesutions}
+                        keyExtractor={(item) => item.id.toString()}
+                        renderItem={
+                          selectedCardId
+                            ? renderRadioButtonCard
+                            : renderFeelingsCard
+                        }
+                        numColumns={3}
+                        contentContainerStyle={styles.grid}
+                      />
+                    </>
+                  )}
+                </>
+              );
+            }}
+          />
+        }
         <View style={styles.bottomContainer}>
           <View style={styles.inputContainer}>
             <TextInput
@@ -445,5 +477,22 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
+  },
+  subThoughtInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#41729F",
+    borderRadius: 10,
+    paddingVertical: 0,
+    paddingHorizontal: 10,
+  },
+  expandedInput: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 14,
+  },
+  subThoughtSendButton: {
+    marginLeft: 10,
+    justifyContent: "center",
   },
 });

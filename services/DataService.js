@@ -315,11 +315,134 @@ class DataService {
     }
   }
 
+
+  static async getAnswesfromFeelingandNeeds(collectionPath, answersCollectionPath) {
+    const userId = auth.currentUser.uid;
+
+    const result = [];
+
+    const answersCollection = collection(db, answersCollectionPath);
+    const q = query(answersCollection, where("userId", "==", userId));
+
+    try {
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        for (const doc of querySnapshot.docs) {
+          const answerData = doc.data();
+          const { questionId, answerId } = answerData;
+
+
+          let questionIndex = result.findIndex(q => q.questionId === questionId);
+
+          if (questionIndex === -1) {
+            const questionQuery = query(
+              collection(db, collectionPath),
+              where("questionId", "==", questionId)
+            );
+
+            const questionSnapshot = await getDocs(questionQuery);
+
+            if (!questionSnapshot.empty) {
+              questionSnapshot.forEach((questionDoc) => {
+                const questionData = questionDoc.data();
+                const { questionText, subquestions } = questionData;
+
+                result.push({
+                  questionId,
+                  question: questionText,
+                  answers: []
+                });
+
+                questionIndex = result.findIndex(q => q.questionId === questionId);
+
+                const subquestion = subquestions.find(
+                  sub => sub.answers.some(answer => answer.id === answerId)
+                );
+
+                if (subquestion) {
+                  const userAnswer = subquestion.answers.find(
+                    answer => answer.id === answerId
+                  );
+
+                  if (userAnswer) {
+                    result[questionIndex].answers.push({
+                      questionId,
+                      answerId: userAnswer.id,
+                      answerText: userAnswer.answerText
+                    });
+                  }
+                }
+              });
+            }
+          }
+        }
+
+        console.log(result);
+        return result;
+      } else {
+        console.log("No answers found for the current user.");
+      }
+    } catch (error) {
+      console.error("Error fetching user answers and corresponding questions:", error);
+    }
+
+
+
+  }
+
+  static async updateFeelingsAndNeedsSubquestions(data, collectionPath) {
+    const userId = auth.currentUser.uid;
+
+    try {
+      const questionQuery = query(
+        collection(db, collectionPath),
+        where("questionId", "==", data.questionId)
+      );
+
+      const questionSnapshot = await getDocs(questionQuery);
+
+      if (!questionSnapshot.empty) {
+        const questionDoc = questionSnapshot.docs[0];
+        const questionData = questionDoc.data();
+
+        const subquestionIndex = questionData.subquestions.findIndex(
+          sub => sub.id === data.subquestionId
+        );
+
+        if (subquestionIndex !== -1) {
+          // Step 4: Update the subquestionText
+          questionData.subquestions[subquestionIndex].subquestionText = data.text;
+
+          // Step 5: Update the document in Firestore with the modified subquestions array
+          await updateDoc(questionDoc.ref, {
+            subquestions: questionData.subquestions
+          });
+
+          console.log(`Subquestion text updated successfully for subquestionId: ${data.subquestionId}`);
+        } else {
+          console.log(`Subquestion with id ${data.subquestionId} not found.`);
+        }
+      } else {
+        console.log(`No question found with questionId: ${questionId}`);
+      }
+    } catch (error) {
+      console.error("Error updating subquestion text:", error);
+    }
+
+
+
+  }
+
   static async getUserAnswersFromAllCollections() {
     const currentUserUid = auth.currentUser?.uid;
     if (!currentUserUid) {
       throw new Error("User is not authenticated");
     }
+
+    const feelingsAnswersData = await this.getAnswesfromFeelingandNeeds('feelings-questions', 'user-feelings-answers');
+
+    const needsAnswersData = await this.getAnswesfromFeelingandNeeds('needs-questions', 'user-needs-answers')
 
     // Define the collections you want to query
     const collections = [
@@ -343,11 +466,11 @@ class DataService {
           (answer) => answer.createdBy === currentUserUid
         );
 
-        console.log(
-          filteredAnswers.length,
-          collectionName,
-          "all filtered answers length"
-        );
+        // console.log(
+        //   filteredAnswers.length,
+        //   collectionName,
+        //   "all filtered answers length"
+        // );
 
         // If there are any matching answers, add the document to the results
         if (filteredAnswers.length > 0) {
@@ -361,7 +484,9 @@ class DataService {
       });
     }
 
-    return allDocuments;
+
+
+    return [...allDocuments, ...feelingsAnswersData, ...needsAnswersData];
   }
 }
 

@@ -12,6 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DataService from "@/services/DataService";
+import { useFocusEffect } from '@react-navigation/native';
 
 const SubmittedAnswers = ({ navigation, route }) => {
   const [text, setText] = useState("");
@@ -28,21 +29,31 @@ const SubmittedAnswers = ({ navigation, route }) => {
   const showInput = route.params?.fromIceberg || false;
 
   // Modify the useEffect to only save new answers, not override initial dummy data
-  useEffect(() => {
-    const loadAnswers = async () => {
-      try {
-        const submittedAnswers =
-          await DataService.getUserAnswersFromAllCollections();
 
-        setAnswers(submittedAnswers);
-      } catch (error) {
-        console.error("Error fetching thoughts:", error);
-      }
-    };
-    loadAnswers();
-  }, []);
 
-  // Save new answers to AsyncStorage
+  useFocusEffect(
+    React.useCallback(() => {
+
+      const loadAnswers = async () => {
+        try {
+          const submittedAnswers =
+            await DataService.getUserAnswersFromAllCollections();
+
+          setAnswers(submittedAnswers);
+        } catch (error) {
+          console.error("Error fetching thoughts:", error);
+        }
+      };
+      loadAnswers();
+
+      return () => {
+
+      };
+    }, [])
+  );
+
+
+
   const saveAnswers = async (newAnswers) => {
     try {
       await AsyncStorage.setItem(
