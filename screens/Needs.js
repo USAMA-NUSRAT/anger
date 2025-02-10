@@ -8,6 +8,7 @@ import {
   FlatList,
   TextInput,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -60,7 +61,11 @@ const Needs = ({ navigation }) => {
   const [selectedCardId, setSelectedCardId] = useState(null);
   const [subAnswers, setSubAnswers] = useState([]);
 
-  const [updateQuestion, setUpdateQuestion] = useState({ text: '', questionId: '', subquestionId: '' })
+  const [updateQuestion, setUpdateQuestion] = useState({
+    text: "",
+    questionId: "",
+    subquestionId: "",
+  });
 
   const [selectedRadioButtonId, setSelectedRadioButtonId] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -101,14 +106,13 @@ const Needs = ({ navigation }) => {
   useEffect(() => {
     checkAuth();
     loadKnowledge();
-    return () => { };
+    return () => {};
   }, []);
 
   const toggleExpand = (index) => {
     setExpandedIndex(index === expandedIndex ? null : index);
     setSelectedCardId(null);
-    setUpdateQuestion({ text: '', subquestionId: '', questionId: '' })
-
+    setUpdateQuestion({ text: "", subquestionId: "", questionId: "" });
   };
 
   const feelingsData = Array.from({ length: 9 }, (_, index) => ({
@@ -182,14 +186,21 @@ const Needs = ({ navigation }) => {
   };
 
   const handleUpdateSubQuestions = async () => {
-    if (updateQuestion.subquestionId && updateQuestion.questionId && updateQuestion.text()) {
-      Alert.alert("Error", "Please click on below item")
-      return
+    if (
+      !updateQuestion.subquestionId &&
+      !updateQuestion.questionId &&
+      !updateQuestion.text
+    ) {
+      Alert.alert("Error", "Please click on below item");
+      return;
     }
-    await DataService.updateFeelingsAndNeedsSubquestions(updateQuestion, 'needs-questions')
-    setUpdateQuestion({ text: '', subquestionId: '', questionId: '' })
+    await DataService.updateFeelingsAndNeedsSubquestions(
+      updateQuestion,
+      "needs-questions"
+    );
+    setUpdateQuestion({ text: "", subquestionId: "", questionId: "" });
 
-    loadKnowledge()
+    loadKnowledge();
   };
 
   const renderNeedsCard = ({ item }) => {
@@ -197,7 +208,7 @@ const Needs = ({ navigation }) => {
       <View
         style={[styles.card, selectedCardId === item.id && styles.selectedCard]}
       >
-        {isAdmin && (
+        {!isAdmin && (
           <TouchableOpacity
             style={styles.circle}
             onPress={() => getAnswers(item)}
@@ -205,7 +216,16 @@ const Needs = ({ navigation }) => {
             <Ionicons name="arrow-forward" size={24} color="#274472" />
           </TouchableOpacity>
         )}
-        <TouchableOpacity onPress={() => { isAdmin && setUpdateQuestion({ subquestionId: item.id, questionId: item.questionId, text: item.subquestionText }) }}>
+        <TouchableOpacity
+          onPress={() => {
+            isAdmin &&
+              setUpdateQuestion({
+                subquestionId: item.id,
+                questionId: item.questionId,
+                text: item.subquestionText,
+              });
+          }}
+        >
           <Text style={styles.cardText}>{item.subquestionText}</Text>
         </TouchableOpacity>
       </View>
@@ -227,12 +247,12 @@ const Needs = ({ navigation }) => {
         "user-needs-answers",
         userAnswer
       );
+      Alert.alert("Your answer has been submitted");
       setSelectedCardId(null);
     } catch (error) {
       console.log(error, "here is error");
     }
   };
-
 
   const renderRadioButtonCard = ({ item }) => (
     <TouchableOpacity
@@ -259,7 +279,7 @@ const Needs = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
@@ -269,8 +289,9 @@ const Needs = ({ navigation }) => {
       <Header onBack={() => navigation.goBack()} title="Need" />
 
       <View style={styles.container}>
-        {loading ? <ActivityIndicator size="large" color="white" />
-          :
+        {loading ? (
+          <ActivityIndicator size="large" color="white" />
+        ) : (
           <FlatList
             data={knowledge}
             keyExtractor={(item, index) => index.toString()}
@@ -300,28 +321,38 @@ const Needs = ({ navigation }) => {
 
                   {expandedIndex === index && (
                     <>
-                      <View style={styles.subThoughtInputContainer}>
-                        <TextInput
-                          style={styles.expandedInput}
-                          placeholder="update question here..."
-                          placeholderTextColor="#FFFFFF80"
-                          value={updateQuestion.text}
-                          onChangeText={(e) => setUpdateQuestion({ ...updateQuestion, text: e })}
-                          autoCapitalize="none"
-                          selectionColor="#FFFFFF"
-                        />
-                        <TouchableOpacity
-                          onPress={handleUpdateSubQuestions}
-                          style={styles.subThoughtSendButton}
-                        >
-                          <Ionicons name="paper-plane-outline" size={24} color="#274472" />
-                        </TouchableOpacity>
-                      </View>
+                      {isAdmin && (
+                        <View style={styles.subThoughtInputContainer}>
+                          <TextInput
+                            style={styles.expandedInput}
+                            placeholder="update question here..."
+                            placeholderTextColor="#FFFFFF80"
+                            value={updateQuestion.text}
+                            onChangeText={(e) =>
+                              setUpdateQuestion({ ...updateQuestion, text: e })
+                            }
+                            autoCapitalize="none"
+                            selectionColor="#FFFFFF"
+                          />
+                          <TouchableOpacity
+                            onPress={handleUpdateSubQuestions}
+                            style={styles.subThoughtSendButton}
+                          >
+                            <Ionicons
+                              name="paper-plane-outline"
+                              size={24}
+                              color="#274472"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      )}
                       <FlatList
                         data={selectedCardId ? subAnswers : squesutions}
                         keyExtractor={(item) => item.id.toString()}
                         renderItem={
-                          selectedCardId ? renderRadioButtonCard : renderNeedsCard
+                          selectedCardId
+                            ? renderRadioButtonCard
+                            : renderNeedsCard
                         }
                         numColumns={3}
                         contentContainerStyle={styles.grid}
@@ -332,8 +363,7 @@ const Needs = ({ navigation }) => {
               );
             }}
           />
-        }
-
+        )}
 
         <View style={styles.inputWrapper}>
           <View style={styles.inputContainer}>

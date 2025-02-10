@@ -315,8 +315,10 @@ class DataService {
     }
   }
 
-
-  static async getAnswesfromFeelingandNeeds(collectionPath, answersCollectionPath) {
+  static async getAnswesfromFeelingandNeeds(
+    collectionPath,
+    answersCollectionPath
+  ) {
     const userId = auth.currentUser.uid;
 
     const result = [];
@@ -332,8 +334,9 @@ class DataService {
           const answerData = doc.data();
           const { questionId, answerId } = answerData;
 
-
-          let questionIndex = result.findIndex(q => q.questionId === questionId);
+          let questionIndex = result.findIndex(
+            (q) => q.questionId === questionId
+          );
 
           if (questionIndex === -1) {
             const questionQuery = query(
@@ -351,25 +354,27 @@ class DataService {
                 result.push({
                   questionId,
                   question: questionText,
-                  answers: []
+                  answers: [],
                 });
 
-                questionIndex = result.findIndex(q => q.questionId === questionId);
+                questionIndex = result.findIndex(
+                  (q) => q.questionId === questionId
+                );
 
-                const subquestion = subquestions.find(
-                  sub => sub.answers.some(answer => answer.id === answerId)
+                const subquestion = subquestions.find((sub) =>
+                  sub.answers.some((answer) => answer.id === answerId)
                 );
 
                 if (subquestion) {
                   const userAnswer = subquestion.answers.find(
-                    answer => answer.id === answerId
+                    (answer) => answer.id === answerId
                   );
 
                   if (userAnswer) {
                     result[questionIndex].answers.push({
                       questionId,
                       answerId: userAnswer.id,
-                      answerText: userAnswer.answerText
+                      answerText: userAnswer.answerText,
                     });
                   }
                 }
@@ -379,16 +384,17 @@ class DataService {
         }
 
         console.log(result);
-        return result;
+        // return result;
       } else {
         console.log("No answers found for the current user.");
       }
+      return result;
     } catch (error) {
-      console.error("Error fetching user answers and corresponding questions:", error);
+      console.error(
+        "Error fetching user answers and corresponding questions:",
+        error
+      );
     }
-
-
-
   }
 
   static async updateFeelingsAndNeedsSubquestions(data, collectionPath) {
@@ -407,19 +413,22 @@ class DataService {
         const questionData = questionDoc.data();
 
         const subquestionIndex = questionData.subquestions.findIndex(
-          sub => sub.id === data.subquestionId
+          (sub) => sub.id === data.subquestionId
         );
 
         if (subquestionIndex !== -1) {
           // Step 4: Update the subquestionText
-          questionData.subquestions[subquestionIndex].subquestionText = data.text;
+          questionData.subquestions[subquestionIndex].subquestionText =
+            data.text;
 
           // Step 5: Update the document in Firestore with the modified subquestions array
           await updateDoc(questionDoc.ref, {
-            subquestions: questionData.subquestions
+            subquestions: questionData.subquestions,
           });
 
-          console.log(`Subquestion text updated successfully for subquestionId: ${data.subquestionId}`);
+          console.log(
+            `Subquestion text updated successfully for subquestionId: ${data.subquestionId}`
+          );
         } else {
           console.log(`Subquestion with id ${data.subquestionId} not found.`);
         }
@@ -429,9 +438,6 @@ class DataService {
     } catch (error) {
       console.error("Error updating subquestion text:", error);
     }
-
-
-
   }
 
   static async getUserAnswersFromAllCollections() {
@@ -440,9 +446,15 @@ class DataService {
       throw new Error("User is not authenticated");
     }
 
-    const feelingsAnswersData = await this.getAnswesfromFeelingandNeeds('feelings-questions', 'user-feelings-answers');
+    const feelingsAnswersData = await this.getAnswesfromFeelingandNeeds(
+      "feelings-questions",
+      "user-feelings-answers"
+    );
 
-    const needsAnswersData = await this.getAnswesfromFeelingandNeeds('needs-questions', 'user-needs-answers')
+    const needsAnswersData = await this.getAnswesfromFeelingandNeeds(
+      "needs-questions",
+      "user-needs-answers"
+    );
 
     // Define the collections you want to query
     const collections = [
@@ -483,8 +495,6 @@ class DataService {
         }
       });
     }
-
-
 
     return [...allDocuments, ...feelingsAnswersData, ...needsAnswersData];
   }

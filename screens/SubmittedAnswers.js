@@ -7,52 +7,46 @@ import {
   TextInput,
   FlatList,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DataService from "@/services/DataService";
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "@react-navigation/native";
 
 const SubmittedAnswers = ({ navigation, route }) => {
   const [text, setText] = useState("");
-  const [answers, setAnswers] = useState([
-    "I need more time for self-care and relaxation.",
-    "Meditation for 10 minutes helped me feel more centered.",
-    "I'm grateful for the support of my friends and family.",
-  ]);
+  const [answers, setAnswers] = useState([]);
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [likedItems, setLikedItems] = useState([]);
   const [dislikedItems, setDislikedItems] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // Get the source of navigation from route params
   const showInput = route.params?.fromIceberg || false;
 
   // Modify the useEffect to only save new answers, not override initial dummy data
 
-
   useFocusEffect(
     React.useCallback(() => {
-
       const loadAnswers = async () => {
         try {
+          setLoading(true);
           const submittedAnswers =
             await DataService.getUserAnswersFromAllCollections();
-
           setAnswers(submittedAnswers);
+          setLoading(false);
         } catch (error) {
-          console.error("Error fetching thoughts:", error);
+          setLoading(false);
+          console.error("Error fetching answers:", error);
         }
       };
       loadAnswers();
 
-      return () => {
-
-      };
+      return () => {};
     }, [])
   );
-
-
 
   const saveAnswers = async (newAnswers) => {
     try {
@@ -62,17 +56,6 @@ const SubmittedAnswers = ({ navigation, route }) => {
       );
     } catch (error) {
       console.error("Error saving answers:", error);
-    }
-  };
-
-  const addAnswer = () => {
-    if (text.trim()) {
-      const newAnswers = [...answers, text.trim()];
-      setAnswers(newAnswers);
-      setText("");
-      saveAnswers(newAnswers); // Save the updated answers
-    } else {
-      Alert.alert("Error", "Please enter some text.");
     }
   };
 
@@ -92,39 +75,44 @@ const SubmittedAnswers = ({ navigation, route }) => {
     <LinearGradient colors={["#5885AF", "#5885AF"]} style={styles.background}>
       <Header onBack={() => navigation.goBack()} title="Submitted Answers" />
       <View style={styles.container}>
-        <FlatList
-          data={answers}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item, index }) => (
-            <>
-              <TouchableOpacity onPress={() => toggleExpand(index)}>
-                <View style={styles.listItem}>
-                  <View style={styles.itemContent}>
-                    <View style={styles.itemNumber}>
-                      <Text style={styles.itemNumberText}>{index + 1}</Text>
-                    </View>
-                    <Text style={styles.itemText}>{item.question}</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="white" />
+        ) : (
+          <FlatList
+            data={answers}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item, index }) => (
+              <>
+                <TouchableOpacity onPress={() => toggleExpand(index)}>
+                  <View style={styles.listItem}>
+                    <View style={styles.itemContent}>
+                      <View style={styles.itemNumber}>
+                        <Text style={styles.itemNumberText}>{index + 1}</Text>
+                      </View>
+                      <Text style={styles.itemText}>{item.question}</Text>
 
-                    <Ionicons
-                      name={
-                        expandedIndex === index ? "chevron-up" : "chevron-down"
-                      }
-                      size={24}
-                      color="#FFF"
-                    />
+                      <Ionicons
+                        name={
+                          expandedIndex === index
+                            ? "chevron-up"
+                            : "chevron-down"
+                        }
+                        size={24}
+                        color="#FFF"
+                      />
+                    </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-              {/* Expanded Content */}
-              {expandedIndex === index && (
-                <View style={styles.expandedContainer}>
-                  {item.answers.map((subitem, subindex) => {
-                    return (
-                      <View key={subindex} style={styles.subThoughtItem}>
-                        <Text style={styles.expandedText}>
-                          {subitem.answerText}
-                        </Text>
-                        {/* <View style={styles.helpfulSection}>
+                </TouchableOpacity>
+                {/* Expanded Content */}
+                {expandedIndex === index && (
+                  <View style={styles.expandedContainer}>
+                    {item.answers.map((subitem, subindex) => {
+                      return (
+                        <View key={subindex} style={styles.subThoughtItem}>
+                          <Text style={styles.expandedText}>
+                            {subitem.answerText}
+                          </Text>
+                          {/* <View style={styles.helpfulSection}>
                           <View style={styles.likeDislike}>
                             <Text style={{ color: "white" }}>Helpful ?</Text>
                             <TouchableOpacity
@@ -162,14 +150,15 @@ const SubmittedAnswers = ({ navigation, route }) => {
                             />
                           </TouchableOpacity>
                         </View> */}
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
-            </>
-          )}
-        />
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </>
+            )}
+          />
+        )}
 
         {/* Input Field - Only show when navigating from Iceberg */}
         {/* {showInput && (

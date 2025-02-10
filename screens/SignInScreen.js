@@ -69,7 +69,7 @@ const SignInScreen = ({ navigation }) => {
       await DataService.saveAuthState(userCredential.user);
 
       // Try to get user data in background
-      DataService.getUserData(userCredential.user.uid);
+      await DataService.getUserData(userCredential.user.uid);
 
       // Navigate immediately
       navigation.replace("HomeScreen");
@@ -190,11 +190,11 @@ const SignInScreen = ({ navigation }) => {
               onChangeText={setPassword}
             />
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => navigation.navigate("ForgetPassword")}
             >
               <Text style={styles.forgotPassword}>Forgot Password?</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {loading ? (
               <ActivityIndicator

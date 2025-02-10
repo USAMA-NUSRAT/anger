@@ -26,9 +26,12 @@ const Feelings = ({ navigation }) => {
   const [selectedRadioButtonId, setSelectedRadioButtonId] = useState(null);
   const [subAnswers, setSubAnswers] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [updateQuestion, setUpdateQuestion] = useState({ text: '', questionId: '', subquestionId: '' })
+  const [updateQuestion, setUpdateQuestion] = useState({
+    text: "",
+    questionId: "",
+    subquestionId: "",
+  });
   const [loading, setLoading] = useState(false);
-
 
   const loadKnowledge = async () => {
     try {
@@ -67,13 +70,13 @@ const Feelings = ({ navigation }) => {
   useEffect(() => {
     checkAuth();
     loadKnowledge();
-    return () => { };
+    return () => {};
   }, []);
 
   const toggleExpand = (index) => {
     setExpandedIndex(index === expandedIndex ? null : index);
     setSelectedCardId(null);
-    setUpdateQuestion({ text: '', subquestionId: '', questionId: '' })
+    setUpdateQuestion({ text: "", subquestionId: "", questionId: "" });
   };
 
   const feelingsData = Array.from({ length: 9 }, (_, index) => ({
@@ -147,24 +150,29 @@ const Feelings = ({ navigation }) => {
   };
 
   const handleUpdateSubQuestions = async () => {
-    if (updateQuestion.subquestionId && updateQuestion.questionId && updateQuestion.text()) {
-      Alert.alert("Error", "Please click on below item")
-      return
+    if (
+      !updateQuestion.subquestionId &&
+      !updateQuestion.questionId &&
+      !updateQuestion.text
+    ) {
+      Alert.alert("Error", "Please click on below item");
+      return;
     }
-    await DataService.updateFeelingsAndNeedsSubquestions(updateQuestion, 'feelings-questions')
-    setUpdateQuestion({ text: '', subquestionId: '', questionId: '' })
+    await DataService.updateFeelingsAndNeedsSubquestions(
+      updateQuestion,
+      "feelings-questions"
+    );
+    setUpdateQuestion({ text: "", subquestionId: "", questionId: "" });
 
-    loadKnowledge()
+    loadKnowledge();
   };
 
   const renderFeelingsCard = ({ item }) => {
     return (
-
-
       <View
         style={[styles.card, selectedCardId === item.id && styles.selectedCard]}
       >
-        {isAdmin && (
+        {!isAdmin && (
           <TouchableOpacity
             style={styles.circle}
             onPress={() => getAnswers(item)}
@@ -172,14 +180,21 @@ const Feelings = ({ navigation }) => {
             <Ionicons name="arrow-forward" size={24} color="#274472" />
           </TouchableOpacity>
         )}
-        <TouchableOpacity onPress={() => { isAdmin && setUpdateQuestion({ subquestionId: item.id, questionId: item.questionId, text: item.subquestionText }) }}>
+        <TouchableOpacity
+          onPress={() => {
+            isAdmin &&
+              setUpdateQuestion({
+                subquestionId: item.id,
+                questionId: item.questionId,
+                text: item.subquestionText,
+              });
+          }}
+        >
           <Text style={styles.cardText}>{item.subquestionText}</Text>
         </TouchableOpacity>
       </View>
-
     );
   };
-
 
   const updateAnswers = async (item) => {
     setSelectedRadioButtonId(item.id);
@@ -196,6 +211,7 @@ const Feelings = ({ navigation }) => {
         "user-feelings-answers",
         userAnswer
       );
+      Alert.alert("Your answer has been submitted");
       setSelectedCardId(null);
     } catch (error) {
       console.log(error, "here is error");
@@ -232,10 +248,9 @@ const Feelings = ({ navigation }) => {
     <LinearGradient colors={["#5885AF", "#5885AF"]} style={styles.background}>
       <Header onBack={() => navigation.goBack()} title="Feelings" />
       <View style={styles.container}>
-
-        {loading ? <ActivityIndicator size="large" color="white" />
-          :
-
+        {loading ? (
+          <ActivityIndicator size="large" color="white" />
+        ) : (
           <FlatList
             data={knowledge}
             keyExtractor={(item, index) => index.toString()}
@@ -264,23 +279,31 @@ const Feelings = ({ navigation }) => {
                   </TouchableOpacity>
                   {expandedIndex === index && (
                     <>
-                      <View style={styles.subThoughtInputContainer}>
-                        <TextInput
-                          style={styles.expandedInput}
-                          placeholder="update question here..."
-                          placeholderTextColor="#FFFFFF80"
-                          value={updateQuestion.text}
-                          onChangeText={(e) => setUpdateQuestion({ ...updateQuestion, text: e })}
-                          autoCapitalize="none"
-                          selectionColor="#FFFFFF"
-                        />
-                        <TouchableOpacity
-                          onPress={handleUpdateSubQuestions}
-                          style={styles.subThoughtSendButton}
-                        >
-                          <Ionicons name="paper-plane-outline" size={24} color="#274472" />
-                        </TouchableOpacity>
-                      </View>
+                      {isAdmin && (
+                        <View style={styles.subThoughtInputContainer}>
+                          <TextInput
+                            style={styles.expandedInput}
+                            placeholder="update question here..."
+                            placeholderTextColor="#FFFFFF80"
+                            value={updateQuestion.text}
+                            onChangeText={(e) =>
+                              setUpdateQuestion({ ...updateQuestion, text: e })
+                            }
+                            autoCapitalize="none"
+                            selectionColor="#FFFFFF"
+                          />
+                          <TouchableOpacity
+                            onPress={handleUpdateSubQuestions}
+                            style={styles.subThoughtSendButton}
+                          >
+                            <Ionicons
+                              name="paper-plane-outline"
+                              size={24}
+                              color="#274472"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      )}
                       <FlatList
                         data={selectedCardId ? subAnswers : squesutions}
                         keyExtractor={(item) => item.id.toString()}
@@ -298,7 +321,7 @@ const Feelings = ({ navigation }) => {
               );
             }}
           />
-        }
+        )}
         <View style={styles.bottomContainer}>
           <View style={styles.inputContainer}>
             <TextInput
