@@ -10,10 +10,10 @@ import {
   updateDoc,
   serverTimestamp,
   arrayUnion,
-} from "firebase/firestore";
-import { auth, db } from "../firebase";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import NetInfo from "@react-native-community/netinfo";
+} from 'firebase/firestore';
+import { auth, db } from '../firebase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 
 class DataService {
   // Check if we're online
@@ -27,7 +27,7 @@ class DataService {
     try {
       await AsyncStorage.setItem(key, JSON.stringify(data));
     } catch (error) {
-      console.error("Error saving locally:", error);
+      console.error('Error saving locally:', error);
     }
   }
 
@@ -37,14 +37,14 @@ class DataService {
       const data = await AsyncStorage.getItem(key);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.error("Error getting local data:", error);
+      console.error('Error getting local data:', error);
       return null;
     }
   }
 
   static async checkExistingRecordAndUpdate(collectionPath, data) {
     const user = auth.currentUser;
-    if (!user) throw new Error("No authenticated user");
+    if (!user) throw new Error('No authenticated user');
 
     // Add timestamp
 
@@ -55,9 +55,9 @@ class DataService {
 
         const q = query(
           answersCollection,
-          where("questionId", "==", data.questionId),
-          where("subquestionId", "==", data.subquestionId),
-          where("userId", "==", data.userId)
+          where('questionId', '==', data.questionId),
+          where('subquestionId', '==', data.subquestionId),
+          where('userId', '==', data.userId)
         );
 
         const querySnapshot = await getDocs(q);
@@ -72,15 +72,15 @@ class DataService {
             await updateDoc(existingDoc.ref, {
               answerId: data.answerId,
             });
-            console.log("AnswerId updated successfully!");
+            console.log('AnswerId updated successfully!');
           } else {
             // If answerId is the same, no need to update anything
-            console.log("Record already exists with the same answerId.");
+            console.log('Record already exists with the same answerId.');
           }
         } else {
           // No matching record found, so create a new document
           await setDoc(doc(answersCollection), data);
-          console.log("New record added successfully!");
+          console.log('New record added successfully!');
         }
       }
       //  else {
@@ -90,14 +90,14 @@ class DataService {
       //   return tempId;
       // }
     } catch (error) {
-      console.error("Error adding document:", error);
+      console.error('Error adding document:', error);
     }
   }
 
   // Add document with offline support
   static async addDocument(collectionPath, data, id = null) {
     const user = auth.currentUser;
-    if (!user) throw new Error("No authenticated user");
+    if (!user) throw new Error('No authenticated user');
 
     // Add timestamp
     const docData = {
@@ -129,19 +129,21 @@ class DataService {
       //   return tempId;
       // }
     } catch (error) {
-      console.error("Error adding document:", error);
+      console.error('Error adding document:', error);
     }
   }
 
   static async updateDocument(collectionPath, data, id) {
     const user = auth.currentUser;
-    if (!user) throw new Error("No authenticated user");
+    if (!user) throw new Error('No authenticated user');
 
     const docRef = doc(db, collectionPath, id);
+    const clientTimestamp = new Date();
 
     const updateData = {
       ...data,
       createdBy: auth.currentUser.uid,
+      createdAt: clientTimestamp,
     };
 
     try {
@@ -153,7 +155,24 @@ class DataService {
         return;
       }
     } catch (error) {
-      console.error("Error adding document:", error);
+      console.error('Error adding document:', error);
+    }
+  }
+
+  static async updateQuestions(collectionPath, data, id) {
+    const user = auth.currentUser;
+    if (!user) throw new Error('No authenticated user');
+
+    const docRef = doc(db, collectionPath, id);
+
+    try {
+      if (await this.isOnline()) {
+        await updateDoc(docRef, {
+          question: data,
+        });
+      }
+    } catch (error) {
+      console.error('Error adding document:', error);
     }
   }
 
@@ -174,7 +193,7 @@ class DataService {
       // If offline or doc doesn't exist, try local cache
       return await this.getLocal(path);
     } catch (error) {
-      console.error("Error getting document:", error);
+      console.error('Error getting document:', error);
       // Return local cache if available
       return await this.getLocal(path);
     }
@@ -186,7 +205,7 @@ class DataService {
 
     try {
       const keys = await AsyncStorage.getAllKeys();
-      const tempKeys = keys.filter((key) => key.startsWith("temp_"));
+      const tempKeys = keys.filter((key) => key.startsWith('temp_'));
 
       for (const key of tempKeys) {
         const data = await this.getLocal(key);
@@ -200,7 +219,7 @@ class DataService {
         }
       }
     } catch (error) {
-      console.error("Error syncing pending changes:", error);
+      console.error('Error syncing pending changes:', error);
     }
   }
 
@@ -215,7 +234,7 @@ class DataService {
 
       // If online and no local data, try Firestore
       if (await this.isOnline()) {
-        const docSnap = await getDoc(doc(db, "users", userId));
+        const docSnap = await getDoc(doc(db, 'users', userId));
         if (docSnap.exists()) {
           const data = docSnap.data();
           // Save to local storage for future offline access
@@ -226,7 +245,7 @@ class DataService {
 
       return null;
     } catch (error) {
-      console.error("Error getting user data:", error);
+      console.error('Error getting user data:', error);
       return null;
     }
   }
@@ -240,18 +259,18 @@ class DataService {
         email: user.email,
         lastLogin: new Date().toISOString(),
       };
-      await this.saveLocally("authUser", authData);
+      await this.saveLocally('authUser', authData);
     } catch (error) {
-      console.error("Error saving auth state:", error);
+      console.error('Error saving auth state:', error);
     }
   }
 
   // Get saved auth state
   static async getAuthState() {
     try {
-      return await this.getLocal("authUser");
+      return await this.getLocal('authUser');
     } catch (error) {
-      console.error("Error getting auth state:", error);
+      console.error('Error getting auth state:', error);
       return null;
     }
   }
@@ -259,20 +278,32 @@ class DataService {
   // Get collection with offline support
   static async getCollection(collectionPath) {
     try {
-      // First try to get from local storage
-      // const localData = await this.getLocal(collectionPath);
-      // console.log(localData, "here is local data");
-      // if (localData) {
-      //   return localData;
-      // }
-
-      // If online and no local data, try Firestore
       if (await this.isOnline()) {
         const querySnapshot = await getDocs(collection(db, collectionPath));
-        const documents = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const documents = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          const currentDate = new Date().toDateString();
+
+          const filteredAnswers = data?.answers?.filter((answer) => {
+            const answerDate = new Date(
+              answer?.createdAt?.seconds * 1000
+            ).toDateString();
+
+            return (
+              answer.createdBy === auth.currentUser?.uid &&
+              answerDate == currentDate
+            );
+          });
+
+          return {
+            id: doc.id,
+            question: data.question,
+            createdBy: data.createdBy,
+            createdAt: data.createdAt,
+            answers: filteredAnswers,
+          };
+        });
+        // console.log(documents, "here is user documents---");
 
         // Save to local storage for future offline access
         // await this.saveLocally(collectionPath, documents);
@@ -281,7 +312,34 @@ class DataService {
 
       return [];
     } catch (error) {
-      console.error("Error getting collection:", error);
+      console.error('Error getting collection:', error);
+      return [];
+    }
+  }
+
+  static async getFeelingAndNeedsQuestions(collectionPath) {
+    try {
+      if (await this.isOnline()) {
+        const querySnapshot = await getDocs(collection(db, collectionPath));
+        const documents = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          const currentDate = new Date().toDateString();
+
+          return {
+            id: doc.id,
+            ...data,
+          };
+        });
+        // console.log(documents, "here is user documents---");
+
+        // Save to local storage for future offline access
+        // await this.saveLocally(collectionPath, documents);
+        return documents;
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Error getting collection:', error);
       return [];
     }
   }
@@ -289,29 +347,29 @@ class DataService {
   static async verifyAdmin(userId) {
     try {
       // Check local first
-      const savedAdmin = await this.getLocal("adminAuth");
+      const savedAdmin = await this.getLocal('adminAuth');
       if (savedAdmin?.uid === userId && savedAdmin?.isAdmin) {
         return true;
       }
 
       // If online, check Firestore
       if (await this.isOnline()) {
-        const adminDoc = await getDoc(doc(db, "admins", userId));
+        const adminDoc = await getDoc(doc(db, 'admins', userId));
         return adminDoc.exists() && adminDoc.data().isAdmin;
       }
 
       return false;
     } catch (error) {
-      console.error("Error verifying admin:", error);
+      console.error('Error verifying admin:', error);
       return false;
     }
   }
 
   static async clearAdminAuth() {
     try {
-      await this.saveLocally("adminAuth", null);
+      await this.saveLocally('adminAuth', null);
     } catch (error) {
-      console.error("Error clearing admin auth:", error);
+      console.error('Error clearing admin auth:', error);
     }
   }
 
@@ -324,7 +382,7 @@ class DataService {
     const result = [];
 
     const answersCollection = collection(db, answersCollectionPath);
-    const q = query(answersCollection, where("userId", "==", userId));
+    const q = query(answersCollection, where('userId', '==', userId));
 
     try {
       const querySnapshot = await getDocs(q);
@@ -341,7 +399,7 @@ class DataService {
           if (questionIndex === -1) {
             const questionQuery = query(
               collection(db, collectionPath),
-              where("questionId", "==", questionId)
+              where('questionId', '==', questionId)
             );
 
             const questionSnapshot = await getDocs(questionQuery);
@@ -386,12 +444,12 @@ class DataService {
         console.log(result);
         // return result;
       } else {
-        console.log("No answers found for the current user.");
+        console.log('No answers found for the current user.');
       }
       return result;
     } catch (error) {
       console.error(
-        "Error fetching user answers and corresponding questions:",
+        'Error fetching user answers and corresponding questions:',
         error
       );
     }
@@ -403,7 +461,7 @@ class DataService {
     try {
       const questionQuery = query(
         collection(db, collectionPath),
-        where("questionId", "==", data.questionId)
+        where('questionId', '==', data.questionId)
       );
 
       const questionSnapshot = await getDocs(questionQuery);
@@ -436,32 +494,32 @@ class DataService {
         console.log(`No question found with questionId: ${questionId}`);
       }
     } catch (error) {
-      console.error("Error updating subquestion text:", error);
+      console.error('Error updating subquestion text:', error);
     }
   }
 
   static async getUserAnswersFromAllCollections() {
     const currentUserUid = auth.currentUser?.uid;
     if (!currentUserUid) {
-      throw new Error("User is not authenticated");
+      throw new Error('User is not authenticated');
     }
 
     const feelingsAnswersData = await this.getAnswesfromFeelingandNeeds(
-      "feelings-questions",
-      "user-feelings-answers"
+      'feelings-questions',
+      'user-feelings-answers'
     );
 
     const needsAnswersData = await this.getAnswesfromFeelingandNeeds(
-      "needs-questions",
-      "user-needs-answers"
+      'needs-questions',
+      'user-needs-answers'
     );
 
     // Define the collections you want to query
     const collections = [
-      "body-questions",
-      "sos-questions",
-      "knowledge-questions",
-      "thoughts-questions",
+      'body-questions',
+      'sos-questions',
+      'knowledge-questions',
+      'thoughts-questions',
     ];
 
     const allDocuments = [];

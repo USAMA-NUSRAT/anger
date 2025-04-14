@@ -9,19 +9,28 @@ import {
   Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons, MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
+import {
+  Ionicons,
+  MaterialCommunityIcons,
+  Octicons,
+  AntDesign,
+} from "@expo/vector-icons";
 import { auth } from "../firebase";
 import { serverTimestamp } from "firebase/firestore";
 import DataService from "../services/DataService";
+import CustomAlert from "@/components/CustomAlert";
 
 const Thoughts = ({ navigation }) => {
   const [question, setQuestion] = useState("");
   const [answer, setAnswers] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [editQueston, setEditQuestion] = useState("");
 
   const [thoughts, setThoughts] = useState([]);
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [subThoughtText, setSubThoughtText] = useState("");
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({});
 
   const checkAuth = async () => {
     try {
@@ -56,7 +65,7 @@ const Thoughts = ({ navigation }) => {
         `thoughts-questions`
       );
 
-      console.log(thoughtsList, "here is thought list");
+      // console.log(thoughtsList, "here is thought list");
       setThoughts(thoughtsList);
     } catch (error) {
       console.error("Error fetching thoughts:", error);
@@ -68,13 +77,15 @@ const Thoughts = ({ navigation }) => {
       Alert.alert("Please fill question and answer field");
       return;
     }
-
+    const clientTimestamp = new Date();
     const questionData = {
       question,
       answers: [
         {
           answerText: answer,
           createdBy: auth.currentUser.uid,
+          createdAt: serverTimestamp(),
+          createdAt: clientTimestamp,
         },
       ],
     };
@@ -91,6 +102,30 @@ const Thoughts = ({ navigation }) => {
     }
   };
 
+  const editThought = async (item) => {
+    // console.log(item, "here is edit item ==>>>>");
+    setAlertConfig({
+      title: "Edit Thought",
+      value: item.question,
+      onContinue: async (data) => {
+        setAlertVisible(false);
+        try {
+          if (data.trim() !== "" && data !== item.question) {
+            await DataService.updateQuestions(
+              "thoughts-questions",
+              data,
+              item.id
+            );
+            fetchThoughts();
+          }
+        } catch (e) {
+          console.log("error", e);
+        }
+      },
+    });
+    setAlertVisible(true);
+  };
+
   const toggleExpand = (index) => {
     setExpandedIndex(index === expandedIndex ? null : index);
   };
@@ -98,8 +133,10 @@ const Thoughts = ({ navigation }) => {
   return (
     <LinearGradient colors={["#5885AF", "#5885AF"]} style={styles.background}>
       <Header onBack={() => navigation.goBack()} title="Thoughts" />
+
       <View style={styles.container}>
         {/* List of Submitted Thoughts */}
+
         <FlatList
           data={thoughts}
           keyExtractor={(item, index) => index.toString()}
@@ -112,6 +149,15 @@ const Thoughts = ({ navigation }) => {
                       <Text style={styles.itemNumberText}>{index + 1}</Text>
                     </View>
                     <Text style={styles.itemText}>{item.question}</Text>
+
+                    {isAdmin && (
+                      <TouchableOpacity
+                        onPress={() => editThought(item)}
+                        style={{ marginRight: 5 }}
+                      >
+                        <AntDesign name="edit" size={24} color="#FFF" />
+                      </TouchableOpacity>
+                    )}
 
                     <Ionicons
                       name={
@@ -179,6 +225,14 @@ const Thoughts = ({ navigation }) => {
           </View>
         )}
       </View>
+
+      {alertVisible && (
+        <CustomAlert
+          visible={alertVisible}
+          onClose={() => setAlertVisible(false)}
+          {...alertConfig}
+        />
+      )}
     </LinearGradient>
   );
 };
@@ -366,7 +420,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   input: {
-    flex: 1,
     color: "#FFF",
     fontSize: 16,
     paddingVertical: 0, // Adjusts alignment

@@ -31,6 +31,8 @@ const UsersListing = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertConfig, setAlertConfig] = useState({});
+  const [expandedIndex, setExpandedIndex] = useState(null);
+
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -205,6 +207,59 @@ const UsersListing = ({ navigation }) => {
     </View>
   );
 
+  const toggleExpand = (index) => {
+    setExpandedIndex(index === expandedIndex ? null : index);
+  };
+
+  const ExpandedForm = ({ item, index }) => {
+    return (
+      <View style={styles.userCard}>
+        {/* <View style={styles.userHeader}>
+            <View style={styles.userIcon}>
+              <Text style={styles.userInitials}>
+                {item.firstName?.[0] || ""}
+                {item.lastName?.[0] || ""}
+              </Text>
+            </View>
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>
+                {item.firstName} {item.lastName}
+              </Text>
+              <Text style={styles.userEmail}>{item.email}</Text>
+            </View>
+          </View> */}
+        <View style={styles.userDetails}>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="mail" size={16} color="#fff" />
+            <Text style={styles.detailText}>{item.email}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="date-range" size={16} color="#fff" />
+            <Text style={styles.detailText}>Joined: {item.createdAt}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="phone" size={16} color="#fff" />
+            <Text style={styles.detailText}>{item?.phone || "No phone"}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <MaterialIcons name="person" size={16} color="#fff" />
+            <Text style={styles.detailText}>
+              {item?.gender || "Gender not specified"}
+            </Text>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => handleUserClick(item)}
+        >
+          <Text style={{ color: "#fff" }}>
+            {item.isDisabled ? "Enable" : "Disable"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   const renderContent = () => {
     if (loading && !refreshing) {
       return (
@@ -218,12 +273,45 @@ const UsersListing = ({ navigation }) => {
     return (
       <FlatList
         data={users}
-        renderItem={renderUserCard}
+        // renderItem={renderUserCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        renderItem={({ item, index }) => (
+          <>
+            <TouchableOpacity onPress={() => toggleExpand(index)}>
+              <View style={styles.listItem}>
+                <View style={styles.itemContent}>
+                  <View style={styles.userIcon}>
+                    <Text style={styles.userInitials}>
+                      {item.firstName?.[0] || ""}
+                      {item.lastName?.[0] || ""}
+                    </Text>
+                  </View>
+                  <Text style={styles.itemText}>
+                    {" "}
+                    {item.firstName} {item.lastName}
+                  </Text>
+
+                  <Ionicons
+                    name={
+                      expandedIndex === index
+                        ? "chevron-forward"
+                        : "chevron-down"
+                    }
+                    size={24}
+                    color="#FFF"
+                  />
+                </View>
+              </View>
+            </TouchableOpacity>
+            {expandedIndex === index && (
+              <ExpandedForm item={item} index={index} />
+            )}
+          </>
+        )}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <MaterialIcons name="people-outline" size={50} color="#fff" />
@@ -340,23 +428,18 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   userCard: {
-    backgroundColor: "#dcdae3",
+    backgroundColor: "#FFFFFF1A",
     borderRadius: 10,
     padding: 15,
     marginBottom: 15,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
   userHeader: {
     flexDirection: "row",
     alignItems: "center",
   },
   userIcon: {
-    width: 50,
-    height: 50,
+    width: 35,
+    height: 35,
     borderRadius: 25,
     backgroundColor: "#5885AF",
     justifyContent: "center",
@@ -365,7 +448,7 @@ const styles = StyleSheet.create({
   },
   userInitials: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: "bold",
   },
   userInfo: {
@@ -382,8 +465,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   userDetails: {
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
     marginTop: 10,
     paddingTop: 10,
   },
@@ -394,7 +475,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: "#666",
+    color: "white",
     marginLeft: 8,
   },
   emptyContainer: {
@@ -418,6 +499,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     textAlign: "center",
     marginTop: 4,
+  },
+
+  listItem: {
+    backgroundColor: "#274472",
+    borderRadius: 50,
+    padding: 8,
+    marginBottom: 5,
+  },
+  itemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  itemNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#FFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+  },
+  itemNumberText: {
+    color: "#FFF",
+    fontSize: 14,
+  },
+  itemText: {
+    flex: 1,
+    color: "#FFFFFF",
+    fontSize: 16,
+  },
+  actionButton: {
+    flex: 1,
+    backgroundColor: "#274472",
+    padding: 10,
+    borderRadius: 10,
+    marginRight: 5,
+    alignItems: "center",
   },
 });
 

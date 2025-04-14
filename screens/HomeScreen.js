@@ -197,15 +197,16 @@ const HomeScreen = ({ navigation }) => {
             options={{ headerShown: false }}
           /> */}
           <Tab.Screen
-            name="Thoughts"
-            component={Thoughts}
-            options={{ headerShown: false }}
-          />
-          <Tab.Screen
             name="Knowledge"
             component={Knowledge}
             options={{ headerShown: false }}
           />
+          <Tab.Screen
+            name="Thoughts"
+            component={Thoughts}
+            options={{ headerShown: false }}
+          />
+
           <Tab.Screen
             name="Sos"
             component={SOS}

@@ -12,7 +12,6 @@ const SplashScreen = ({ navigation }) => {
       <View style={styles.overlay} />
       <Image source={require("../assets/SplashIcon.png")} style={styles.icon} />
       <Heading navigation={navigation} heading="Welcome to AngerManager" />
-      <Text style={styles.para}>Lorem Ipsum Dolor. </Text>
       <View style={styles.buttonContainer}>
         <ReusableButton
           text="Get Started"

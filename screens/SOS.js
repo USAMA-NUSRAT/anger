@@ -244,7 +244,7 @@ const ExpandedForm = ({
     <View style={styles.expandedContainer}>
       {thought.answers?.map((answer, subIndex) => (
         <View key={subIndex} style={styles.subThoughtItem}>
-          <Text style={styles.subThoughtText}>{answer.answerText}</Text>
+          <Text style={styles.subThoughtText}>{answer.answerText || ""}</Text>
         </View>
       ))}
 

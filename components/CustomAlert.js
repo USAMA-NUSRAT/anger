@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image
+  Image,
 } from 'react-native';
+import InputField from './InputField';
 
 const CustomAlert = ({
   visible,
@@ -16,7 +17,12 @@ const CustomAlert = ({
   message,
   email,
   onContinue,
+  value,
+  helpQuestionAnswer,
+  setHelpQuestionAnswer,
 }) => {
+  const [dValue, setDValue] = useState(value);
+
   return (
     <Modal
       transparent
@@ -27,30 +33,72 @@ const CustomAlert = ({
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           {/* Icon */}
-          <View style={styles.iconWrapper}>
-            <Image source={icon} style={styles.image}/>
-          </View>
+          {icon && (
+            <View style={styles.iconWrapper}>
+              <Image source={icon} style={styles.image} />
+            </View>
+          )}
 
-          <Text style={styles.title}>{title}</Text>
+          {title && <Text style={styles.title}>{title}</Text>}
 
-          <Text style={styles.message}>{message}</Text>
+          {message && <Text style={styles.message}>{message}</Text>}
 
           {email && <Text style={styles.email}>{email}</Text>}
+          {value && (
+            <View style={styles.container}>
+              <InputField
+                placeholder={`Edit your ${title}`}
+                value={dValue}
+                onChangeText={setDValue}
+              />
+            </View>
+          )}
+
+          {helpQuestionAnswer && (
+            <>
+              <View style={styles.container}>
+                <InputField
+                  placeholder={`Add help Question`}
+                  value={helpQuestionAnswer.question}
+                  onChangeText={(t) => {
+                    setHelpQuestionAnswer((prev) => ({
+                      ...prev,
+                      question: t,
+                    }));
+                  }}
+                />
+              </View>
+              <View style={styles.container}>
+                <InputField
+                  placeholder={`Add help Answer`}
+                  value={helpQuestionAnswer.answer}
+                  onChangeText={(t) =>
+                    setHelpQuestionAnswer({
+                      ...helpQuestionAnswer,
+                      answer: t,
+                    })
+                  }
+                />
+              </View>
+            </>
+          )}
 
           {/* Buttons */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={onContinue}
+              onPress={() =>
+                onContinue(helpQuestionAnswer ? helpQuestionAnswer : dValue)
+              }
             >
               <Text style={styles.buttonText}>Continue</Text>
             </TouchableOpacity>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.secondaryButton}
               onPress={onClose}
             >
               <Text style={styles.secondarybuttonText}>Cancel</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
       </View>
@@ -76,8 +124,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   image: {
-    height:48,
-    width:48,
+    height: 48,
+    width: 48,
   },
   title: {
     fontSize: 16,
@@ -119,11 +167,12 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    
   },
   secondarybuttonText: {
     color: '#000',
-    
+  },
+  container: {
+    width: '100%',
   },
 });
 

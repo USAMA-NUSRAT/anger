@@ -20,6 +20,7 @@ import ReusableButton from "../components/ReusableButton";
 import InputField from "../components/InputField";
 import Google from "../assets/google.png";
 import Facebook from "../assets/facebook.png";
+import { validateEmail } from "../utils/emailValidator";
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -40,6 +41,10 @@ const SignInScreen = ({ navigation }) => {
       return;
     }
 
+    if (!validateEmail(email)) {
+      Alert.alert("Error", "Please provide valid email.");
+      return;
+    }
     setLoading(true);
     try {
       // Authenticate
@@ -115,39 +120,39 @@ const SignInScreen = ({ navigation }) => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
+  // const handleGoogleSignIn = async () => {
+  //   try {
+  //     const result = await signInWithPopup(auth, googleProvider);
+  //     const user = result.user;
 
-      // Check if user document exists
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (!userDoc.exists()) {
-        // Create user document for Google sign-in
-        await setDoc(doc(db, "users", user.uid), {
-          firstName: user.displayName?.split(" ")[0] || "",
-          lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
-          email: user.email,
-          createdAt: serverTimestamp(),
-          disabled: false,
-        });
-      }
+  //     // Check if user document exists
+  //     const userDoc = await getDoc(doc(db, "users", user.uid));
+  //     if (!userDoc.exists()) {
+  //       // Create user document for Google sign-in
+  //       await setDoc(doc(db, "users", user.uid), {
+  //         firstName: user.displayName?.split(" ")[0] || "",
+  //         lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
+  //         email: user.email,
+  //         createdAt: serverTimestamp(),
+  //         disabled: false,
+  //       });
+  //     }
 
-      navigation.navigate("HomeScreen");
-    } catch (error) {
-      Alert.alert("Error", "Failed to sign in with Google");
-    }
-  };
+  //     navigation.navigate("HomeScreen");
+  //   } catch (error) {
+  //     Alert.alert("Error", "Failed to sign in with Google");
+  //   }
+  // };
 
-  const handleFacebookSignIn = async () => {
-    try {
-      const result = await signInWithPopup(auth, facebookProvider);
-      // Similar to Google sign-in handling
-      navigation.navigate("HomeScreen");
-    } catch (error) {
-      Alert.alert("Error", "Failed to sign in with Facebook");
-    }
-  };
+  // const handleFacebookSignIn = async () => {
+  //   try {
+  //     const result = await signInWithPopup(auth, facebookProvider);
+  //     // Similar to Google sign-in handling
+  //     navigation.navigate("HomeScreen");
+  //   } catch (error) {
+  //     Alert.alert("Error", "Failed to sign in with Facebook");
+  //   }
+  // };
 
   return (
     <LinearGradient
@@ -190,11 +195,11 @@ const SignInScreen = ({ navigation }) => {
               onChangeText={setPassword}
             />
 
-            {/* <TouchableOpacity
+            <TouchableOpacity
               onPress={() => navigation.navigate("ForgetPassword")}
             >
               <Text style={styles.forgotPassword}>Forgot Password?</Text>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
 
             {loading ? (
               <ActivityIndicator
@@ -206,7 +211,7 @@ const SignInScreen = ({ navigation }) => {
               <ReusableButton text="Sign In" onPress={handleLogin} />
             )}
 
-            <View style={styles.dividerContainer}>
+            {/* <View style={styles.dividerContainer}>
               <View style={styles.line} />
               <Text style={styles.orText}>OR</Text>
               <View style={styles.line} />
@@ -229,7 +234,7 @@ const SignInScreen = ({ navigation }) => {
               <Text style={styles.secondaryButtonText}>
                 Continue with Facebook
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {/* Signup Text */}
             <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>

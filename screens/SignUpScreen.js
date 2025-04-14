@@ -8,10 +8,11 @@ import ReusableButton from "../components/ReusableButton";
 import InputField from "../components/InputField";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CustomAlert from "../components/CustomAlert";
-import InformationIcon from "../assets/information_icon.png"
+import InformationIcon from "../assets/information_icon.png";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
+import { validateEmail } from "@/utils/emailValidator";
 
 const SignUpScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
@@ -23,7 +24,7 @@ const SignUpScreen = ({ navigation }) => {
   const [alertConfig, setAlertConfig] = useState({});
 
   const handleInputChange = (field, value) => {
-    console.log(`Field: ${field}, Value: ${value}`); // Debug log
+    // console.log(`Field: ${field}, Value: ${value}`); // Debug log
     setFormData({ ...formData, [field]: value });
   };
 
@@ -39,16 +40,30 @@ const SignUpScreen = ({ navigation }) => {
       return;
     }
 
+    // if (!validateEmail(formData.email)) {
+    //   setAlertConfig({
+    //     icon: InformationIcon,
+    //     title: "Error",
+    //     message: "Please provide valid email",
+    //     onContinue: () => setAlertVisible(false),
+    //   });
+    //   setAlertVisible(true);
+    //   return;
+    // }
+
     try {
-      console.log('Saving signup data:', formData);
-      await AsyncStorage.setItem('tempUserData', JSON.stringify({
-        email: formData.email.trim(),
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim()
-      }));
-      navigation.navigate('CreatePassword', { email: formData.email });
+      console.log("Saving signup data:", formData);
+      await AsyncStorage.setItem(
+        "tempUserData",
+        JSON.stringify({
+          email: formData.email.trim(),
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+        })
+      );
+      navigation.navigate("CreatePassword", { email: formData.email });
     } catch (error) {
-      console.error('Error in signup:', error);
+      console.error("Error in signup:", error);
       setAlertConfig({
         icon: InformationIcon,
         title: "Error",
